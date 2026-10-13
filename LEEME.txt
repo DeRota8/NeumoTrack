@@ -1,0 +1,11 @@
+NeumoTrack V7 — prototipo PWA de demostración, SOLO pacientes ficticios.
+
+Cambios desde V6:
+- Ficha general: selector directo Hombre / Mujer y Edad manual (0-120 años), ambos opcionales.
+- Cabeceras de TODOS los formularios: icono de paciente azul/rosa según sexo, edad tras el nombre en tamaño pequeño; debajo NUHSA y juicio clínico en cursiva sin prefijo «Juicio clínico:».
+- Las fichas antiguas de demostración, sin sexo o edad, siguen siendo compatibles y se pueden completar al editar.
+- Misma estética aprobada, desplegables funcionales, engranaje y navegación de V6.
+
+La demo HTML guarda cambios solo en este navegador (almacenamiento local).
+Para instalar la PWA en el iPhone, publicar la carpeta en un servidor HTTPS (p. ej. GitHub Pages) y abrir desde Safari.
+No hay aún sincronización con Google Sheets ni sistema seguro para datos clínicos reales.

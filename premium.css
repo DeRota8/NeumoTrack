@@ -1,0 +1,187 @@
+/* NeumoTrack V3 — estética aprobada, iconografía completa sin recortes. */
+:root{--navy:#0a2853;--ink:#102c54;--aqua:#24a5bd;--muted:#627996;--shadow:0 10px 27px rgba(27,73,115,.10)}
+html{-webkit-text-size-adjust:100%}
+body{
+  color:var(--ink);
+  background:
+    radial-gradient(ellipse 68% 24% at 12% 3%,#e5f5fe 0%,transparent 85%),
+    radial-gradient(ellipse 55% 23% at 86% 37%,#e3f2fa 0%,transparent 78%),
+    linear-gradient(180deg,#fff 0%,#f7fbff 62%,#f1f8fd 100%);
+}
+.screen{max-width:920px;padding:42px 32px 132px}
+.brandline{align-items:flex-start;margin:0 0 30px 4px;gap:0}
+.brandtext{font-size:clamp(43px,5vw,62px);font-weight:830;letter-spacing:-2.85px;line-height:1.0;color:#092750}
+.brandtext .accent{background:linear-gradient(125deg,#1784c2,#24aebb);-webkit-background-clip:text;background-clip:text;color:transparent}
+.subtitle{color:#506d91;font-size:16px;font-weight:440;letter-spacing:.035em;margin:9px 0 0 3px}
+.category-grid{gap:18px}
+.category-card{
+  isolation:isolate;
+  height:223px;
+  padding:21px 23px 23px;
+  border:2px solid #fff;
+  border-radius:27px;
+  box-shadow:0 11px 22px rgba(41,84,127,.115),0 0 0 1px rgba(197,224,238,.37),inset 0 1px 0 #fff;
+  transition:transform .16s ease, box-shadow .16s ease;
+  overflow:hidden;
+}
+.category-card::before{content:"";position:absolute;width:175px;height:150px;border-radius:50%;left:12px;top:7px;z-index:-1;opacity:.4;pointer-events:none}
+.category-card:hover{transform:translateY(-2px);box-shadow:0 16px 30px rgba(41,84,127,.16)}
+.category-card:active{transform:scale(.988)}
+.category-card .count{top:15px;right:16px;color:white;border-radius:25px;min-width:50px;font-weight:770;font-size:19px;padding:7px 12px;box-shadow:0 5px 10px rgba(46,79,123,.13);font-variant-numeric:tabular-nums;z-index:2}
+.category-card .pictogram{height:129px;width:180px;display:block;position:relative;margin-left:-7px;align-self:flex-start}
+.pictogram img{display:block;width:100%;height:100%;object-fit:contain;user-select:none;pointer-events:none}
+.card-bottom{align-items:flex-end}
+.card-title{font-size:22px;font-weight:780;line-height:1.12;letter-spacing:-.64px;color:#0b2a54;max-width:calc(100% - 20px)}
+.card-arrow{font-size:32px;font-weight:360;color:#294f7d;align-self:center;margin-bottom:-4px}
+.cat-tests{background:linear-gradient(139deg,#f0f9ff,#e7f4ff)}
+.cat-tests::before{background:#d9edff}.cat-tests .count{background:linear-gradient(135deg,#87d4fc,#389cec)}
+.cat-transplant{background:linear-gradient(137deg,#f1fffa,#e3fbf3)}
+.cat-transplant::before{background:#d5fbef}.cat-transplant .count{background:linear-gradient(135deg,#83e2c9,#2cc5a6)}
+.cat-committee{background:linear-gradient(135deg,#fff7f6,#ffebea)}
+.cat-committee::before{background:#ffe4e1}.cat-committee .count{background:linear-gradient(135deg,#ffaca9,#f46b76)}
+.cat-referrals{background:linear-gradient(135deg,#fbfaff,#efedff)}
+.cat-referrals::before{background:#e7e2ff}.cat-referrals .count{background:linear-gradient(135deg,#bfb0ff,#8e7af3)}
+.cat-medication{background:linear-gradient(135deg,#fffef4,#fff4df)}
+.cat-medication::before{background:#fff1cb}.cat-medication .count{background:linear-gradient(135deg,#ffd075,#e7a02f)}
+.cat-other{background:linear-gradient(135deg,#f6faff,#e7f0f8)}
+.cat-other::before{background:#d8e6f3}.cat-other .count{background:linear-gradient(135deg,#a8c1d4,#738ea9)}
+.footer-meta{display:flex;align-items:center;justify-content:center;gap:8px;font-size:11px;color:#7a8da4;font-weight:700;letter-spacing:.07em;margin-top:25px}
+.demo-dot{width:7px;height:7px;background:#43b7c2;border-radius:50%;display:inline-block}
+.bottom-nav{
+  width:min(100%,920px);
+  background:rgba(255,255,255,.96);
+  border-radius:0;
+  box-shadow:0 -7px 24px rgba(48,88,127,.08);
+  border:1px solid #e6edf5;
+  border-bottom:0;
+  -webkit-backdrop-filter:blur(15px);backdrop-filter:blur(15px);
+  padding:7px max(7px,env(safe-area-inset-right)) calc(9px + env(safe-area-inset-bottom)) max(7px,env(safe-area-inset-left));
+}
+.nav-btn{color:#5b7192;border-radius:12px;gap:5px;min-height:61px;font-size:12px;font-weight:570;background:transparent}
+.nav-btn svg{width:26px;height:26px;stroke-width:1.7}
+.nav-btn.active{color:#0873c7;background:transparent;font-weight:730}
+.nav-btn .nav-plus{
+  width:42px;height:42px;border-radius:50%;
+  background:linear-gradient(135deg,#48b6f8,#1777df);
+  box-shadow:0 4px 11px rgba(27,123,224,.29),0 0 0 5px rgba(54,156,235,.08);
+  color:white;margin-bottom:0;
+}
+.nav-btn .nav-plus svg{width:26px;height:26px;stroke-width:2.5}
+/* Secondary pages keep the same navy, blue-tinted premium system. */
+.page-head{margin-bottom:20px}
+.page-title{color:#0b2c56}
+.page-back{border:1px solid #e3eef7;border-radius:14px;background:#fff;color:#34638a;box-shadow:0 6px 14px rgba(41,94,140,.07)}
+.section{border-radius:23px;border:1px solid #e3edf5;box-shadow:0 8px 21px rgba(35,80,130,.07);padding:24px}
+.section-head h2{color:#102d55}
+.btn{border-radius:13px}
+.btn-primary{background:linear-gradient(135deg,#267bd0,#2cb8d2);border:1px solid #2794c8;box-shadow:0 5px 15px rgba(28,122,180,.18)}
+.search-input,.field input:not([type=checkbox]),.field select,.field textarea{background:#fafdff;border:1px solid #d6e4f0;border-radius:13px}
+.tabs{background:#eff5fb;border-radius:15px}
+.tab-btn.active{box-shadow:0 3px 10px rgba(18,64,102,.08)}
+.patient-row{min-height:70px}
+.patient-row:focus-visible,.category-card:focus-visible,.nav-btn:focus-visible{outline:3px solid #299dce;outline-offset:3px}
+.patient-head-card{background:linear-gradient(135deg,#e9f8fe,#f1fdff)}
+.field textarea{min-height:164px}
+.choice{position:relative;min-height:95px;padding:12px;border:2px solid #fff;box-shadow:0 4px 14px rgba(20,64,95,.08);border-radius:21px}
+.choice .choice-ico{width:69px;height:65px;flex-shrink:0;display:block}
+.choice-ico img{display:block;width:100%;height:100%;object-fit:contain}
+.choice-arrow{margin-left:auto;font-size:26px;font-weight:350;color:#6e8fad}
+@media(max-width:650px){
+  .screen{padding:26px 16px 118px}
+  .screen.form-screen{padding:22px 15px 40px}
+  .brandline{margin:6px 0 23px 2px}
+  .brandtext{font-size:clamp(36px,10.1vw,48px);letter-spacing:-2.12px;line-height:1}
+  .subtitle{font-size:13.5px;letter-spacing:0;margin:6px 0 0 1px}
+  .category-grid{gap:12px}
+  .category-card{height:171px;border-radius:24px;padding:12px 14px 14px}
+  .category-card .count{font-size:17px;right:12px;top:12px;min-width:38px;padding:5px 10px}
+  .category-card .pictogram{width:128px;height:107px;margin:-3px 0 0 -7px;max-width:100%}
+  .pictogram img{object-fit:contain}
+  .card-title{font-size:16px;line-height:1.16;letter-spacing:-.52px;max-width:100%}
+  .card-arrow{font-size:27px;flex-shrink:0;align-self:center;margin-left:2px}
+  .bottom-nav{border-radius:0;padding-top:6px}
+  .nav-btn{min-height:58px;font-size:11px;gap:5px}
+  .nav-btn svg{width:25px;height:25px}
+  .nav-btn .nav-plus{width:39px;height:39px}
+  .nav-btn .nav-plus svg{width:25px;height:25px}
+  .footer-meta{font-size:9.4px;margin-top:19px;letter-spacing:.01em}
+  .section{padding:18px 14px;border-radius:19px}
+  .page-title{font-size:22px}
+  .page-head{margin-bottom:17px}
+  .category-choice{gap:12px}
+  .choice{padding:8px;min-height:84px;gap:5px;font-size:12.5px;line-height:1.17}
+  .choice .choice-ico{width:50px;height:54px}
+  .choice-arrow{font-size:20px}
+}
+@media(max-width:360px){
+ .screen{padding-left:12px;padding-right:12px}
+ .brandline{margin-bottom:20px}
+ .category-grid{gap:9px}
+ .category-card{height:165px;padding:11px 11px 12px;border-radius:22px}
+ .category-card .pictogram{height:102px;width:118px}
+ .card-title{font-size:14px}
+ .card-arrow{font-size:21px}
+}
+
+/* Mantener cada ilustración SVG completa dentro de su tarjeta. */
+.category-card .pictogram{overflow:visible;margin-left:0;max-width:100%}
+.category-card .pictogram img{object-position:center center}
+.category-card{overflow:hidden}
+@media(max-width:650px){.category-card .pictogram{width:min(100%,142px);height:107px;margin:0;flex-shrink:1}.card-bottom{position:relative;z-index:1}}
+@media(max-width:360px){.category-card .pictogram{width:min(100%,124px);height:99px;margin:0}}
+
+/* V4 — ILUSTRACIONES ORIGINALMENTE APROBADAS (no dibujos SVG nuevos). */
+.category-card .pictogram img,.choice-ico img{object-fit:contain;max-width:100%;max-height:100%}
+.category-card .pictogram{overflow:visible}
+/* Únicamente «Pacientes» en el encabezado del listado, más legible. */
+.section-head h2{font-size:25px;letter-spacing:-.45px;line-height:1.2}
+@media(max-width:650px){
+  .section-head h2{font-size:23px}
+  .category-card .pictogram{width:min(100%,158px);height:108px}
+  .category-card .pictogram img{width:100%;height:100%;object-fit:contain}
+}
+@media(max-width:360px){.category-card .pictogram{width:min(100%,137px);height:105px}}
+
+/* V5: iPhone-safe searchable dropdowns; illustrated home and form layout remain unchanged. */
+.nt-combo{position:relative;min-width:0}
+.nt-combo.open{z-index:10}
+.nt-combo-control{display:flex;align-items:stretch;position:relative}
+.field .nt-combo-control input{padding-right:51px;min-width:0}
+.nt-combo-toggle{position:absolute;top:2px;bottom:2px;right:2px;width:45px;border:0;border-left:1px solid #e1eaf2;border-radius:0 11px 11px 0;background:#f2f9fd;color:#1d6f9c;font-size:28px;line-height:1;display:grid;place-items:center;touch-action:manipulation}
+.nt-combo-toggle span{transform:translateY(-3px)}
+.nt-combo-toggle:focus-visible,.nt-combo-options button:focus-visible{outline:2px solid #268cb9;outline-offset:-2px}
+.nt-combo-options{position:absolute;top:calc(100% + 5px);left:0;right:0;z-index:12;max-height:245px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;background:#fff;border:1px solid #c5ddea;border-radius:15px;padding:5px;box-shadow:0 13px 29px rgba(15,59,95,.21)}
+.nt-combo-options button{display:block;text-align:left;background:#fff;color:#223e5e;border:0;border-radius:9px;padding:12px 10px;width:100%;min-height:44px;font-size:15px;font-weight:550;white-space:normal;overflow-wrap:break-word}
+.nt-combo-options button:not(.hidden)+button:not(.hidden){border-top:1px solid #eff3f8}
+.nt-combo-options button:active,.nt-combo-options button:hover{background:#e8f5fc}
+.nt-combo-options button[aria-selected=true]{background:#e9f6fb;font-weight:750}
+.nt-combo-options p{font-size:12px;color:#71889c;padding:5px 10px 7px;margin:0;line-height:1.4}
+.patient-head-card>div:last-child{min-width:0;flex:1}
+.patient-judgement{font-size:13px;line-height:1.4;color:#395b76;margin-top:7px;white-space:pre-wrap;overflow-wrap:anywhere}
+.patient-judgement span{font-weight:780;color:#194b70}
+
+/* NeumoTrack V7: demographics and polished patient header */
+.sex-field{border:0;padding:0;margin:0;min-inline-size:0}
+.sex-field legend{font-size:14px;font-weight:730;color:#304764;margin-bottom:8px;padding:0}
+.sex-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.sex-choice{display:block;min-width:0;position:relative;cursor:pointer}
+.sex-choice input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+.sex-choice>span{display:flex;justify-content:center;align-items:center;gap:7px;min-height:49px;border:1px solid #d6e4f0;border-radius:13px;background:#fafdff;color:#395775;font-weight:700;font-size:14px;transition:background .12s,border-color .12s,box-shadow .12s}
+.sex-choice-m input:checked+span{border:2px solid #4a9ee9;background:#e9f5ff;color:#175f9b;box-shadow:0 0 0 2px rgba(74,158,233,.11)}
+.sex-choice-f input:checked+span{border:2px solid #e581ab;background:#fff0f7;color:#a64470;box-shadow:0 0 0 2px rgba(229,129,171,.11)}
+.sex-choice input:focus-visible+span{outline:3px solid #4a9ee9;outline-offset:3px}
+.sex-avatar{width:44px;height:44px;flex:0 0 44px;border-radius:15px;display:flex;align-items:center;justify-content:center;border:1px solid #e0e9f1;background:#fff;color:#7895ab}
+.sex-avatar svg{width:27px;height:27px;display:block}
+.sex-avatar.male{color:#287fd0;background:linear-gradient(155deg,#e8f5ff,#d8eeff);border-color:#b8dcfb}
+.sex-avatar.female{color:#d5689b;background:linear-gradient(155deg,#fff0f7,#ffe3f0);border-color:#f7c5db}
+.sex-avatar.unknown{color:#8195a8;background:#f4f7fa}
+.sex-choice .sex-avatar{width:25px;height:25px;flex:0 0 25px;border:0;border-radius:8px;background:transparent}
+.sex-choice .sex-avatar svg{width:21px;height:21px}
+.patient-head-card{align-items:flex-start;gap:12px;padding:17px}
+.patient-head-content{min-width:0;flex:1}
+.patient-title-row{display:flex;align-items:baseline;flex-wrap:wrap;gap:5px 10px}
+.patient-title-row .name-link{font-size:18px;line-height:1.28;overflow-wrap:anywhere}
+.patient-age{font-size:12.5px;font-weight:600;color:#687e96;white-space:nowrap}
+.patient-head-card .small{margin-top:6px;font-size:12px;line-height:1.35;color:#6b8197}
+.patient-judgement{font-size:14px;line-height:1.45;margin-top:6px;color:#315b75;font-style:italic;font-weight:470;white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:360px){.patient-head-card{padding:13px;gap:9px}.sex-avatar{width:39px;height:39px;flex-basis:39px}.patient-title-row .name-link{font-size:16px}.patient-judgement{font-size:13px}}
