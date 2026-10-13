@@ -1,11 +1,14 @@
-NeumoTrack V7 — prototipo PWA de demostración, SOLO pacientes ficticios.
+NeumoTrack V8 — Prototipo de evaluación (datos ficticios)
 
-Cambios desde V6:
-- Ficha general: selector directo Hombre / Mujer y Edad manual (0-120 años), ambos opcionales.
-- Cabeceras de TODOS los formularios: icono de paciente azul/rosa según sexo, edad tras el nombre en tamaño pequeño; debajo NUHSA y juicio clínico en cursiva sin prefijo «Juicio clínico:».
-- Las fichas antiguas de demostración, sin sexo o edad, siguen siendo compatibles y se pueden completar al editar.
-- Misma estética aprobada, desplegables funcionales, engranaje y navegación de V6.
+NOVEDADES V8:
+- Normalización de ancho, altura y alineación a la izquierda de todos los campos de fecha, especialmente en Safari de iPhone.
+- Pantalla Nuevo con seis botones ilustrados en una única columna en móviles. Inicio mantiene su diseño de dos columnas.
+- Se mantiene el almacenamiento local de la V7, por lo que la actualización del sitio no debería borrar los datos locales guardados.
 
-La demo HTML guarda cambios solo en este navegador (almacenamiento local).
-Para instalar la PWA en el iPhone, publicar la carpeta en un servidor HTTPS (p. ej. GitHub Pages) y abrir desde Safari.
-No hay aún sincronización con Google Sheets ni sistema seguro para datos clínicos reales.
+INSTRUCCIONES:
+1. Para actualizar el repositorio GitHub Pages existente, subir los archivos de este ZIP sobre los anteriores, sustituyéndolos.
+2. Mantener index.html en la raíz, y el contenido de assets/ e icons/ en sus carpetas.
+3. Verificar la publicación en Actions; cerrar y volver a abrir la aplicación instalada en iPhone.
+4. Si el navegador muestra caché, probar en Safari la dirección de Pages antes de reinstalar.
+
+AVISO: Esta es una DEMOSTRACIÓN sin autenticación, sincronización ni respaldo automático. Emplear SOLO pacientes ficticios. No es apta para información clínica real.
