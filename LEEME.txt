@@ -1,24 +1,4 @@
-NeumoTrack V8.3 - Corrección del icono iPhone
-=================================================
-Se mantienen todos los formularios y funciones de V8.2. Solo cambia la configuración de los iconos de la aplicación.
-
-ARCHIVOS IMPRESCINDIBLES (rutas exactas en GitHub):
-  index.html
-  manifest.webmanifest
-  icons/apple-touch-icon.png  (180x180, Safari iPhone)
-  icons/icon-192.png         (192x192, PWA)
-  icons/icon-512.png         (512x512, PWA)
-
-ACTUALIZACIÓN RÁPIDA:
-1. En GitHub abre el repositorio NeumoTrack, en la pestaña Code.
-2. Add file > Upload files. Arrastra LOS ARCHIVOS Y LA CARPETA icons
-   del ZIP pequeño descomprimido, no el ZIP mismo ni su carpeta contenedora.
-3. Acepta reemplazar index.html y manifest.webmanifest y los PNG existentes.
-4. Pulsa Commit changes y espera a que Actions salga en verde.
-5. En Safari del iPhone abre la web de GitHub Pages, recarga la página,
-   pulsa Compartir > Añadir a pantalla de inicio.
-
-Si quedan archivos antiguos con el sufijo -v82 dentro de icons,
-no afectan a la V8.3: no los utiliza ninguna referencia nueva.
-
-Importante: es un prototipo para pacientes ficticios, sin sincronización remota.
+NeumoTrack v9 - PWA con sincronización opcional a Google Sheets mediante Apps Script.
+Mantiene diseño y formularios de v8.3.
+Abre Configuración > Sincronización para conectar.
+Consulta NeumoTrack_V9_AppsScript/INSTRUCCIONES.txt antes de configurar.

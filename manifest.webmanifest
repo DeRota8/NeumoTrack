@@ -1,7 +1,7 @@
 {
   "name": "NeumoTrack · Tu agenda de Neumología",
   "short_name": "NeumoTrack",
-  "description": "Prototipo de agenda de seguimiento en Neumología, solo con datos ficticios.",
+  "description": "Agenda de seguimiento en Neumología con sincronización opcional.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
