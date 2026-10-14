@@ -1,16 +1,24 @@
-NeumoTrack V8.2 — Correcciones visuales para iPhone
+NeumoTrack V8.3 - Corrección del icono iPhone
+=================================================
+Se mantienen todos los formularios y funciones de V8.2. Solo cambia la configuración de los iconos de la aplicación.
 
-CAMBIOS RESPECTO A V8.1:
-1. Se elimina por completo el logotipo de la cabecera de Inicio; queda solo «NeumoTrack» y el subtítulo.
-2. El icono instalable recupera el dibujo original completo, ligeramente ampliado, con márgenes de seguridad uniformes para que iOS no lo recorte ni lo descentre.
-3. Se mantiene la corrección del centrado vertical de las fechas y el menú Nuevo en una sola columna.
-4. No se modifica el almacenamiento local ni la lógica clínica o de tareas.
+ARCHIVOS IMPRESCINDIBLES (rutas exactas en GitHub):
+  index.html
+  manifest.webmanifest
+  icons/apple-touch-icon.png  (180x180, Safari iPhone)
+  icons/icon-192.png         (192x192, PWA)
+  icons/icon-512.png         (512x512, PWA)
 
-INSTALACIÓN/ACTUALIZACIÓN:
-- Descomprime el ZIP de actualización. En GitHub -> NeumoTrack -> Add file -> Upload files
-  sube su CONTENIDO, incluidos los nuevos iconos de la carpeta icons/.
-- Confirma con Commit changes y espera Actions en verde.
-- Abre la dirección publicada en Safari. El icono de la pantalla de inicio puede tardar en refrescarse por la caché de iOS.
-- NO elimines la app instalada sin exportar antes una copia de seguridad de las pruebas ficticias; puedes perder sus datos locales.
+ACTUALIZACIÓN RÁPIDA:
+1. En GitHub abre el repositorio NeumoTrack, en la pestaña Code.
+2. Add file > Upload files. Arrastra LOS ARCHIVOS Y LA CARPETA icons
+   del ZIP pequeño descomprimido, no el ZIP mismo ni su carpeta contenedora.
+3. Acepta reemplazar index.html y manifest.webmanifest y los PNG existentes.
+4. Pulsa Commit changes y espera a que Actions salga en verde.
+5. En Safari del iPhone abre la web de GitHub Pages, recarga la página,
+   pulsa Compartir > Añadir a pantalla de inicio.
 
-ATENCIÓN: Prototipo sin autenticación ni sincronización. Solo datos de pacientes inventados.
+Si quedan archivos antiguos con el sufijo -v82 dentro de icons,
+no afectan a la V8.3: no los utiliza ninguna referencia nueva.
+
+Importante: es un prototipo para pacientes ficticios, sin sincronización remota.
