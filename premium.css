@@ -186,11 +186,13 @@ body{
 .patient-judgement{font-size:14px;line-height:1.45;margin-top:6px;color:#315b75;font-style:italic;font-weight:470;white-space:pre-wrap;overflow-wrap:anywhere}
 @media(max-width:360px){.patient-head-card{padding:13px;gap:9px}.sex-avatar{width:39px;height:39px;flex-basis:39px}.patient-title-row .name-link{font-size:16px}.patient-judgement{font-size:13px}}
 
-/* NeumoTrack V8 — iOS Safari: identical sizing and left-aligned date controls. */
+/* NeumoTrack V8.1 — iOS Safari: identical sizing and vertically centred dates. */
 /* Safari can keep a wide intrinsic date-field size despite a fluid parent. */
 .field-grid,.field,.section{min-width:0;max-width:100%;}
 .field input[type="date"]{
-  display:block;
+  display:inline-flex;
+  align-items:center;
+  justify-content:flex-start;
   width:100%;
   min-width:0;
   max-width:100%;
@@ -216,7 +218,11 @@ body{
   margin:0;
   padding:0;
   min-width:0;
-  min-height:1em;
+  /* Safari iPhone: reserve a full line and centre it within the 47px control. */
+  height:1.5em;
+  min-height:1.5em;
+  line-height:1.5em;
+  align-self:center;
   width:100%;
 }
 .field input[type="date"]::-webkit-datetime-edit{
@@ -224,6 +230,8 @@ body{
   margin:0;
   padding:0;
   min-width:0;
+  line-height:1.5em;
+  align-self:center;
 }
 .field input[type="date"]::-webkit-calendar-picker-indicator{
   flex-shrink:0;

@@ -1,14 +1,16 @@
-NeumoTrack V8 — Prototipo de evaluación (datos ficticios)
+NeumoTrack V8.2 — Correcciones visuales para iPhone
 
-NOVEDADES V8:
-- Normalización de ancho, altura y alineación a la izquierda de todos los campos de fecha, especialmente en Safari de iPhone.
-- Pantalla Nuevo con seis botones ilustrados en una única columna en móviles. Inicio mantiene su diseño de dos columnas.
-- Se mantiene el almacenamiento local de la V7, por lo que la actualización del sitio no debería borrar los datos locales guardados.
+CAMBIOS RESPECTO A V8.1:
+1. Se elimina por completo el logotipo de la cabecera de Inicio; queda solo «NeumoTrack» y el subtítulo.
+2. El icono instalable recupera el dibujo original completo, ligeramente ampliado, con márgenes de seguridad uniformes para que iOS no lo recorte ni lo descentre.
+3. Se mantiene la corrección del centrado vertical de las fechas y el menú Nuevo en una sola columna.
+4. No se modifica el almacenamiento local ni la lógica clínica o de tareas.
 
-INSTRUCCIONES:
-1. Para actualizar el repositorio GitHub Pages existente, subir los archivos de este ZIP sobre los anteriores, sustituyéndolos.
-2. Mantener index.html en la raíz, y el contenido de assets/ e icons/ en sus carpetas.
-3. Verificar la publicación en Actions; cerrar y volver a abrir la aplicación instalada en iPhone.
-4. Si el navegador muestra caché, probar en Safari la dirección de Pages antes de reinstalar.
+INSTALACIÓN/ACTUALIZACIÓN:
+- Descomprime el ZIP de actualización. En GitHub -> NeumoTrack -> Add file -> Upload files
+  sube su CONTENIDO, incluidos los nuevos iconos de la carpeta icons/.
+- Confirma con Commit changes y espera Actions en verde.
+- Abre la dirección publicada en Safari. El icono de la pantalla de inicio puede tardar en refrescarse por la caché de iOS.
+- NO elimines la app instalada sin exportar antes una copia de seguridad de las pruebas ficticias; puedes perder sus datos locales.
 
-AVISO: Esta es una DEMOSTRACIÓN sin autenticación, sincronización ni respaldo automático. Emplear SOLO pacientes ficticios. No es apta para información clínica real.
+ATENCIÓN: Prototipo sin autenticación ni sincronización. Solo datos de pacientes inventados.
