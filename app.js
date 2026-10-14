@@ -1,13 +1,8 @@
 (() => {
   'use strict';
   const STORAGE_KEY = 'neumotrack.demo.v2';
-  const CLOUD_CACHE_KEY = 'neumotrack.cloud.v9.cache';
-  const CLOUD_CONFIG_KEY = 'neumotrack.cloud.v9.config';
-  let cloudConfig = null;
-  let cloudRevision = 0;
-  let cloudOnline = false;
-  let pendingCloudWrite = null;
-  let cloudBusy = false;
+  const V9_CACHE_KEY = 'neumotrack.cloud.v9.cache';
+  const V9_CONFIG_KEY = 'neumotrack.cloud.v9.config';
   const icons = {
     home: '<path d="m3 11 9-8 9 8v9a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>',
     plus: '<path d="M12 4v16M4 12h16"/>',
@@ -148,78 +143,38 @@
     const done2=makeData(id(5),'committee','Valoración radiológica','Presentado','', 'Caso ya presentado.');done2.active=false;done2.finishedAt=dateShift(-6);tasks.push(done2);
     return {version:1,patients,tasks,options:JSON.parse(JSON.stringify(DEFAULT_OPTIONS))};
   }
-  function newEmptyDb(){return {version:1,patients:[],tasks:[],options:JSON.parse(JSON.stringify(DEFAULT_OPTIONS))};}
-  function storageKey(){return cloudConfig ? CLOUD_CACHE_KEY : STORAGE_KEY;}
-  function readStored(){try{const raw=localStorage.getItem(storageKey());return raw?JSON.parse(raw):null;}catch(e){return null;}}
-  function writeStored(data){try{localStorage.setItem(storageKey(),JSON.stringify(data));saveStorageError=false;return true;}catch(e){saveStorageError=true;return false;}}
-  function ensureOptions(data){if(!data.options)data.options=JSON.parse(JSON.stringify(DEFAULT_OPTIONS));Object.entries(DEFAULT_OPTIONS).forEach(([k,v])=>{if(!Array.isArray(data.options[k]))data.options[k]=v.slice();});return data;}
-  function isValidCloudUrl(url){return /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(url);}
-  function getCloudAt(config){
-    return new Promise((resolve,reject)=>{
-      const callback='NeumoTrack_cb_'+uid().replace(/[^a-zA-Z0-9]/g,'').slice(0,36);
-      const script=document.createElement('script');let done=false;
-      const clear=()=>{if(done)return;done=true;clearTimeout(timer);delete window[callback];script.remove();};
-      const timer=setTimeout(()=>{clear();reject(Error('No responde Google Apps Script.'))},20000);
-      window[callback]=answer=>{clear();if(!answer?.ok)return reject(Error(answer?.error||'Error de conexión.'));resolve(answer);};
-      script.onerror=()=>{clear();reject(Error('No se pudo abrir la dirección de Apps Script.'))};
-      script.src=config.url+'?action=get&callback='+encodeURIComponent(callback)+'&token='+encodeURIComponent(config.token)+'&nocache='+Date.now();
-      document.head.appendChild(script);
-    });
-  }
-  function applyCloudSnapshot(answer){
-    if(!answer?.data||!Array.isArray(answer.data.patients)||!Array.isArray(answer.data.tasks))throw Error('Respuesta de datos no válida.');
-    const fresh=ensureOptions(answer.data);if(!writeStored(fresh))throw Error('No se pudo actualizar la copia local.');
-    cloudRevision=Number(answer.revision)||0;database=fresh;cloudOnline=true;return fresh;
-  }
-  async function refreshCloud(){
-    if(!cloudConfig)return true;
-    try{const response=await getCloudAt(cloudConfig);
-      if(pendingCloudWrite){
-        if((response.operations||[]).includes(pendingCloudWrite.operationId)||response.lastOperationId===pendingCloudWrite.operationId)pendingCloudWrite=null;
-        else if(response.revision!==pendingCloudWrite.baseRevision)pendingCloudWrite=null;
-        else{toast('Guardado pendiente de confirmar. No se han perdido los cambios.');return false;}
-      }
-      applyCloudSnapshot(response);return true;}
-    catch(err){cloudOnline=false;toast('No se pudo sincronizar: '+err.message);return false;}
-  }
-  async function connectCloud(){
-    const url=$screen.querySelector('#sync-url')?.value.trim().replace(/\/\s*$/,'')||'';
-    const token=$screen.querySelector('#sync-token')?.value.trim()||'';
-    if(!isValidCloudUrl(url)||!token){toast('Introduce la URL /exec y la clave de conexión.');return;}
-    if(cloudBusy)return;cloudBusy=true;
-    try{
-      const config={url,token},answer=await getCloudAt(config);
-      if(!answer?.data||!Array.isArray(answer.data.patients))throw Error('La conexión no devolvió una agenda válida.');
-      cloudConfig=config;localStorage.setItem(CLOUD_CONFIG_KEY,JSON.stringify(config));
-      applyCloudSnapshot(answer);history=[];route={name:'home'};render();toast('Agenda compartida conectada.');
-    }catch(err){toast('No se pudo conectar: '+err.message);}
-    finally{cloudBusy=false;}
-  }
-  async function disconnectCloud(){
-    if(!cloudConfig)return;
-    if(pendingCloudWrite){toast('Hay un guardado pendiente de verificar.');return;}
-    const yes=await promptModal('Volver al modo local','Dejarás de utilizar temporalmente la agenda compartida. La agenda local anterior seguirá conservada en este dispositivo.',[{label:'Cancelar',kind:'ghost',value:false},{label:'Usar modo local',kind:'primary',value:true}]);
-    if(!yes)return;
-    localStorage.removeItem(CLOUD_CONFIG_KEY);cloudConfig=null;cloudRevision=0;cloudOnline=false;
-    database=readStored()||seed();writeStored(database);history=[];route={name:'home'};render();toast('Modo local activado.');
-  }
-  async function uploadLocalCloud(){
-    if(!cloudConfig||!cloudOnline)return toast('Primero conecta la agenda compartida.');
-    if(cloudRevision!==0||database.patients.length||database.tasks.length)return toast('La agenda compartida no está vacía. No se sustituirá.');
-    const existing=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');
-    if(!existing||!Array.isArray(existing.patients))return toast('No hay datos locales para importar.');
-    const yes=await promptModal('Subir datos locales','Se copiarán los pacientes y tareas de prueba de este dispositivo a la agenda compartida vacía. ¿Continuar?', [{label:'Cancelar',kind:'ghost',value:false},{label:'Subir datos',kind:'primary',value:true}]);
-    if(!yes)return;
-    if(await persistDb(existing)){render();toast('Datos locales transferidos a la agenda compartida.');}
-  }
+  function readStored(){try{const raw=localStorage.getItem(STORAGE_KEY);return raw?JSON.parse(raw):null;}catch(e){return null;}}
+  function writeStored(data){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(data));saveStorageError=false;return true;}catch(e){saveStorageError=true;return false;}}
   function initialize(){
-    try{cloudConfig=JSON.parse(localStorage.getItem(CLOUD_CONFIG_KEY)||'null');if(cloudConfig&&!isValidCloudUrl(cloudConfig.url))cloudConfig=null;}
-    catch(e){cloudConfig=null;}
     database=readStored();
-    if(!database||!Array.isArray(database.patients)||!Array.isArray(database.tasks)){database=cloudConfig?newEmptyDb():seed();writeStored(database);}
-    ensureOptions(database);render();
-    if(cloudConfig)refreshCloud().then(ok=>{if(ok&&!hasDirty())render();});
+    if(!database || !Array.isArray(database.patients)||!Array.isArray(database.tasks)){database={version:1,patients:[],tasks:[],options:JSON.parse(JSON.stringify(DEFAULT_OPTIONS))};writeStored(database);}
+    if(!database.options)database.options=JSON.parse(JSON.stringify(DEFAULT_OPTIONS));
+    Object.entries(DEFAULT_OPTIONS).forEach(([k,v])=>{if(!Array.isArray(database.options[k]))database.options[k]=v.slice();});
+    render();
+    // A prior V9 installation could have used a separate cloud cache. Never silently overwrite local data.
+    if(localStorage.getItem(V9_CONFIG_KEY)){
+      let cached=null;
+      try{cached=JSON.parse(localStorage.getItem(V9_CACHE_KEY)||'null');}catch(e){}
+      if(cached&&Array.isArray(cached.patients)&&Array.isArray(cached.tasks)){
+        promptModal('Elegir agenda del iPhone',
+          'La versión anterior utilizaba una agenda compartida. ¿Quieres copiar aquí los datos de la última sincronización de este iPhone o conservar la agenda local anterior? Esta nueva versión funcionará sin conexión a Google Sheets.',
+          [{label:'Conservar agenda local',kind:'ghost',value:false},{label:'Copiar última agenda sincronizada',kind:'primary',value:true}]
+        ).then(useCloud=>{
+          if(useCloud){
+            try{
+              if(!localStorage.getItem('neumotrack.v10.local.previa'))localStorage.setItem('neumotrack.v10.local.previa',JSON.stringify(database));
+              if(!writeStored(cached)){toast('No se pudo copiar la agenda. La anterior sigue intacta.');return;}
+              database=cached;ensureOptionsV10();history=[];route={name:'home'};render();
+            }catch(e){toast('No se pudo realizar la copia.');return;}
+          }
+          localStorage.removeItem(V9_CONFIG_KEY);
+          toast(useCloud?'Datos del iPhone recuperados.':'Agenda local conservada.');
+        });
+      }else {localStorage.removeItem(V9_CONFIG_KEY);}
+    }
   }
+  function ensureOptionsV10(){if(!database.options)database.options=JSON.parse(JSON.stringify(DEFAULT_OPTIONS));for(const [k,v] of Object.entries(DEFAULT_OPTIONS))if(!Array.isArray(database.options[k]))database.options[k]=v.slice();}
+
   function toast(message){clearTimeout(toastTimer);$toast.textContent=message;$toast.classList.add('show');toastTimer=setTimeout(()=>$toast.classList.remove('show'),3400);}
   function promptModal(title,message,actions=[{label:'Cancelar',kind:'ghost',value:false},{label:'Confirmar',kind:'primary',value:true}],opts={}){
     return new Promise(resolve=>{
@@ -236,28 +191,24 @@
   function hasDirty(){if(!editingForm)return false;const f=$screen.querySelector('form#data-form');return Boolean(f&&JSON.stringify(formValues(f))!==formBaseline);}
   async function go(next,{push=true,force=false}={}){
     if(!force&&hasDirty()){const okay=await promptModal('Cambios sin guardar','Has modificado el formulario. ¿Quieres salir sin guardar?', [{label:'Seguir editando',kind:'ghost',value:false},{label:'Salir sin guardar',kind:'danger',value:true}]);if(!okay)return false;}
-    if(cloudConfig&&!['config','configDetail'].includes(next.name)){if(!await refreshCloud())return false;}
-    if(next.name==='taskForm'&&next.taskId){const fresh=database.tasks.find(t=>t.id===next.taskId);if(!fresh){toast('La tarea se ha eliminado en otro dispositivo.');return false;}next.taskRev=fresh.rev;}
-    if(next.name==='patientEdit'){const fresh=database.patients.find(p=>p.id===next.patientId);if(!fresh){toast('La ficha se ha eliminado en otro dispositivo.');return false;}next.rev=fresh.rev;}
     if(push)history.push({...route});route={...next};editingForm=false;render();window.scrollTo(0,0);return true;
   }
   async function back(){const last=history[history.length-1]||{name:'home'};if(await go(last,{push:false}))history.pop();}
   function navMarkup(){const entries=[['home','Inicio','home'],['new','Nuevo','plus'],['search','Buscar','search'],['config','Configuración','settings']];return entries.map(([id,label,ico])=>`<button type="button" class="nav-btn ${route.name===id||route.name==='chooseCategory'&&id==='new'?'active':''}" data-go="${id}" aria-label="${label}">${ico==='plus'?`<span class="nav-plus">${navSvg(ico)}</span>`:navSvg(ico)}<span>${label}</span></button>`).join('');}
   function brandMarkup(){return `<header class="brandline"><div class="brand-copy"><h1 class="brandtext">Neumo<span class="accent">Track</span></h1><p class="subtitle">Tu agenda de Neumología</p></div></header>`;}
-  function bannerMarkup(){return `<div class="demo-note"><b>VERSIÓN DE PRUEBA</b><span>Solo datos ficticios · Guardado local en este navegador · Sin conexión a Google Sheets</span></div>`;}
   function pageHead(title,subtitle=''){return `<div class="page-head"><button type="button" class="page-back" data-action="back" aria-label="Volver">‹</button><div class="head-stack"><h1 class="page-title">${esc(title)}</h1>${subtitle?`<div class="page-subtitle">${esc(subtitle)}</div>`:''}</div></div>`;}
   function catCard(c,number){return `<button class="category-card cat-${c.id}" type="button" data-open-category="${c.id}" aria-label="${esc(c.label)}, ${number} pacientes activos"><span class="count" aria-hidden="true">${number}</span><span class="pictogram" aria-hidden="true"><img src="./assets/${c.icon}.png" alt="" draggable="false"></span><span class="card-bottom"><span class="card-title">${esc(c.label)}</span><span class="card-arrow" aria-hidden="true">›</span></span></button>`;}
-  function renderHome(){const count=c=>database.tasks.filter(t=>t.category===c.id&&t.active).length;return `${brandMarkup()}<div class="category-grid">${CATEGORIES.map(c=>catCard(c,count(c))).join('')}</div><p class="footer-meta"><span class="demo-dot"></span> ${cloudConfig?(cloudOnline?'AGENDA COMPARTIDA · Sincronizada al entrar y guardar':'AGENDA COMPARTIDA · Sin conexión'):'MODO LOCAL · Datos de prueba'}</p>`;}
+  function renderHome(){const count=c=>database.tasks.filter(t=>t.category===c.id&&t.active).length;return `${brandMarkup()}<div class="category-grid">${CATEGORIES.map(c=>catCard(c,count(c))).join('')}</div><p class="footer-meta footer-signature">DeRota8 - 2026</p>`;}
   function sortedTasks(cat,tab){const tasks=database.tasks.filter(t=>t.category===cat && (tab==='active'?t.active:!t.active));const getP=t=>database.patients.find(p=>p.id===t.patientId);return tasks.sort((a,b)=>tab==='active'?((a.data.dateReview||'9999-99-99').localeCompare(b.data.dateReview||'9999-99-99') || patientName(getP(a)||{name:'',surname:''}).localeCompare(patientName(getP(b)||{name:'',surname:''}),'es')):((b.finishedAt||'').localeCompare(a.finishedAt||'')|| patientName(getP(a)||{name:'',surname:''}).localeCompare(patientName(getP(b)||{name:'',surname:''}),'es')));}
-  function catRows(tasks,tab,filter=''){const shown=tasks.filter(t=>{const p=database.patients.find(p=>p.id===t.patientId);return p&&norm(`${patientName(p)} ${p.nuhsa} ${displayPrimary(t)}`).includes(norm(filter));});if(!shown.length)return `<div class="empty-state"><div class="symbol">${tab==='active'?'📭':'📂'}</div><strong>No hay pacientes ${tab==='active'?'activos':'finalizados'}</strong><span>${filter?'Prueba otra búsqueda.':'En este apartado no hay registros que mostrar.'}</span></div>`;return shown.map(t=>{const p=database.patients.find(p=>p.id===t.patientId);const date=tab==='active'?t.data.dateReview:t.finishedAt;return `<button type="button" class="patient-row" data-task="${t.id}"><span class="patient-name">${esc(patientName(p))}</span><span class="primary-info">${esc(displayPrimary(t)||'—')}</span><span class="rev-date ${tab==='active'?dateTone(date):''}">${fmtDate(date)}</span><span class="mobile-detail" aria-hidden="true">›</span></button>`;}).join('');}
+  function catRows(tasks,tab,filter=''){const shown=tasks.filter(t=>{const p=database.patients.find(p=>p.id===t.patientId);return p&&norm(`${patientName(p)} ${p.nuhsa} ${displayPrimary(t)}`).includes(norm(filter));});if(!shown.length)return `<div class="empty-state"><div class="symbol">${tab==='active'?'📭':'📂'}</div><strong>${filter?'Sin resultados':tab==='active'?'Sin tareas activas':'Sin tareas finalizadas'}</strong></div>`;return shown.map(t=>{const p=database.patients.find(p=>p.id===t.patientId);const date=tab==='active'?t.data.dateReview:t.finishedAt;return `<button type="button" class="patient-row" data-task="${t.id}"><span class="patient-name">${esc(patientName(p))}</span><span class="primary-info">${esc(displayPrimary(t)||'—')}</span><span class="rev-date ${tab==='active'?dateTone(date):''}">${fmtDate(date)}</span><span class="mobile-detail" aria-hidden="true">›</span></button>`;}).join('');}
   function displayPrimary(t){if(t.category==='committee')return t.data.situation||'—';if(['Otros','Otras'].includes(t.data.primary)&&t.data.otherDetail)return t.data.otherDetail;return t.data.primary||'—';}
   function renderCategory(){const c=category(route.category),tab=route.tab||'active';const allA=sortedTasks(c.id,'active');const allF=sortedTasks(c.id,'finished');const current=tab==='active'?allA:allF;return `${pageHead(c.label)}<div class="section"><div class="section-head"><h2>Pacientes</h2></div><div class="tabs"><button type="button" class="tab-btn ${tab==='active'?'active':''}" data-cat-tab="active">Activos (${allA.length})</button><button type="button" class="tab-btn ${tab==='finished'?'active':''}" data-cat-tab="finished">Finalizados (${allF.length})</button></div><div class="table-head"><span>Nombre</span><span>${esc(c.central)}</span><span style="text-align:right">${tab==='active'?'Próxima revisión':'Finalización'}</span></div><div id="cat-rows">${catRows(current,tab)}</div></div>`;}
-  function renderNew(){return `${pageHead('Nuevo','Elige dónde quieres añadir una tarea')}<div class="section"><div class="subheading">Selecciona el apartado</div><div class="category-choice">${CATEGORIES.map(c=>`<button type="button" class="choice cat-${c.id}" data-pick-cat="${c.id}"><span class="choice-ico"><img src="./assets/${c.icon}.png" alt=""></span><span class="choice-label">${esc(c.label)}</span><span class="choice-arrow">›</span></button>`).join('')}</div></div>`;}
-  function lookupRows(query){const filtered=database.patients.filter(p=>norm(`${patientName(p)} ${p.nuhsa}`).includes(norm(query))).sort(byName);if(!filtered.length)return `<div class="empty-state"><strong>No se han encontrado pacientes</strong><span>Puedes crear un paciente nuevo.</span></div>`;return `<div class="results-head"><span>Nombre y apellidos</span><span>NUHSA</span><span>Activas</span></div>${filtered.map(p=>`<button class="result-row" data-select-patient="${p.id}"><span class="rn">${esc(patientName(p))}</span><span class="rnu">${esc(p.nuhsa)}</span><span class="number"><span class="pill">${database.tasks.filter(t=>t.active&&t.patientId===p.id).length}</span></span></button>`).join('')}`;}
-  function renderPatientLookup(){return `${pageHead('Seleccionar paciente',category(route.category).label)}<div class="section"><div class="section-head"><div><h2>¿A qué paciente corresponde?</h2><p>Busca antes de crear una ficha para evitar duplicados</p></div></div><input class="search-input" id="lookup-search" type="search" autocomplete="off" placeholder="Nombre, apellidos o NUHSA…" value="${esc(route.query||'')}"><div id="lookup-results">${lookupRows(route.query||'')}</div><div class="button-row"><button class="btn btn-primary" data-action="new-patient">＋ Crear nuevo paciente</button></div></div>`;}
-  function renderSearch(){return `${pageHead('Buscar','Todos los pacientes registrados')}<div class="section"><div class="section-head"><div><h2>Buscar pacientes</h2><p>Incluye pacientes sin tareas activas y pacientes finalizados</p></div></div><input class="search-input" id="global-lookup" type="search" placeholder="Nombre, apellidos o NUHSA…" autocomplete="off" value="${esc(route.query||'')}"><div id="lookup-results">${lookupRows(route.query||'')}</div></div>`;}
+  function renderNew(){return `${pageHead('Nuevo')}<div class="section"><div class="category-choice">${CATEGORIES.map(c=>`<button type="button" class="choice cat-${c.id}" data-pick-cat="${c.id}"><span class="choice-ico"><img src="./assets/${c.icon}.png" alt=""></span><span class="choice-label">${esc(c.label)}</span><span class="choice-arrow">›</span></button>`).join('')}</div></div>`;}
+  function lookupRows(query){const filtered=database.patients.filter(p=>norm(`${patientName(p)} ${p.nuhsa}`).includes(norm(query))).sort(byName);if(!filtered.length)return `<div class="empty-state"><strong>Sin resultados</strong></div>`;return `<div class="results-head"><span>Nombre y apellidos</span><span>NUHSA</span><span>Activas</span></div>${filtered.map(p=>`<button class="result-row" data-select-patient="${p.id}"><span class="rn">${esc(patientName(p))}</span><span class="rnu">${esc(p.nuhsa)}</span><span class="number"><span class="pill">${database.tasks.filter(t=>t.active&&t.patientId===p.id).length}</span></span></button>`).join('')}`;}
+  function renderPatientLookup(){return `${pageHead('Seleccionar paciente')}<div class="section"><input class="search-input" id="lookup-search" type="search" autocomplete="off" placeholder="Nombre, apellidos o NUHSA…" value="${esc(route.query||'')}"><div id="lookup-results">${lookupRows(route.query||'')}</div><div class="button-row"><button class="btn btn-primary" data-action="new-patient">＋ Crear nuevo paciente</button></div></div>`;}
+  function renderSearch(){return `${pageHead('Buscar')}<div class="section"><input class="search-input" id="global-lookup" type="search" placeholder="Nombre, apellidos o NUHSA…" autocomplete="off" value="${esc(route.query||'')}"><div id="lookup-results">${lookupRows(route.query||'')}</div></div>`;}
   function patientInfo(p){const info=[['Sexo',p.sex||'—'],['Edad',p.age!==undefined&&p.age!==''?`${p.age} años`:'—'],['NUHSA',p.nuhsa],['Juicio clínico',p.judgement||'—'],['Teléfono de contacto',p.phone||'—'],['Observaciones generales',p.observations||'—']];return `<div class="info-grid">${info.map(([title,val])=>`<div class="info-item ${['Juicio clínico','Observaciones generales'].includes(title)?'full':''}"><div class="label">${title}</div><div class="value">${esc(val)}</div></div>`).join('')}</div>`;}
-  function renderPatient(){const p=database.patients.find(p=>p.id===route.patientId);if(!p)return `<div>Paciente no encontrado</div>`;const active=database.tasks.filter(t=>t.patientId===p.id&&t.active).sort((a,b)=>CATEGORIES.findIndex(c=>c.id===a.category)-CATEGORIES.findIndex(c=>c.id===b.category));const finished=database.tasks.filter(t=>t.patientId===p.id&&!t.active);return `${pageHead(patientName(p),'Ficha general del paciente')}<div class="section"><div class="section-head"><h2>Datos generales</h2><button class="btn btn-soft" type="button" data-edit-patient="${p.id}">✎ Editar datos</button></div>${patientInfo(p)}</div><div class="section"><div class="section-head"><div><h2>Tareas activas</h2><p>${active.length} ${active.length===1?'apartado activo':'apartados activos'}</p></div></div>${active.length?`<div class="compact-tasks">${active.map(t=>`<button class="compact-task" data-task="${t.id}"><strong>${esc(category(t.category).label)}</strong><span>${esc(displayPrimary(t))}</span><em>›</em></button>`).join('')}</div>`:`<div class="empty-state" style="padding:15px 0 26px"><strong>No tiene tareas activas</strong></div>`}<div class="button-row" style="justify-content:space-between"><button class="btn btn-primary" data-add-patient-task="${p.id}">＋ Añadir tarea</button>${finished.length?`<button class="btn btn-ghost" data-show-patient-finished="${p.id}">Ver tareas finalizadas (${finished.length})</button>`:''}</div></div><div class="button-row"><button class="btn btn-danger" data-delete-patient="${p.id}">🗑 Eliminar paciente</button></div>`;}
+  function renderPatient(){const p=database.patients.find(p=>p.id===route.patientId);if(!p)return `<div>Paciente no encontrado</div>`;const active=database.tasks.filter(t=>t.patientId===p.id&&t.active).sort((a,b)=>CATEGORIES.findIndex(c=>c.id===a.category)-CATEGORIES.findIndex(c=>c.id===b.category));const finished=database.tasks.filter(t=>t.patientId===p.id&&!t.active);return `${pageHead(patientName(p))}<div class="section"><div class="section-head"><h2>Datos generales</h2><button class="btn btn-soft" type="button" data-edit-patient="${p.id}">✎ Editar datos</button></div>${patientInfo(p)}</div><div class="section"><div class="section-head"><h2>Tareas activas (${active.length})</h2></div>${active.length?`<div class="compact-tasks">${active.map(t=>`<button class="compact-task" data-task="${t.id}"><strong>${esc(category(t.category).label)}</strong><span>${esc(displayPrimary(t))}</span><em>›</em></button>`).join('')}</div>`:`<div class="empty-state" style="padding:15px 0 26px"><strong>No tiene tareas activas</strong></div>`}<div class="button-row" style="justify-content:space-between"><button class="btn btn-primary" data-add-patient-task="${p.id}">＋ Añadir tarea</button>${finished.length?`<button class="btn btn-ghost" data-show-patient-finished="${p.id}">Ver tareas finalizadas (${finished.length})</button>`:''}</div></div><div class="button-row"><button class="btn btn-danger" data-delete-patient="${p.id}">🗑 Eliminar paciente</button></div>`;}
   function renderPatientFinished(){const p=database.patients.find(p=>p.id===route.patientId);const t=database.tasks.filter(t=>t.patientId===p.id&&!t.active).sort((a,b)=>b.finishedAt.localeCompare(a.finishedAt));return `${pageHead('Tareas finalizadas',patientName(p))}<div class="section">${t.length?t.map(task=>`<button type="button" class="compact-task" style="width:100%;text-align:left;border:0;border-bottom:1px solid #e8eef3;background:white;padding:15px 0;display:flex;align-items:center;gap:15px;color:#1a395c" data-task="${task.id}"><strong style="min-width:30%">${esc(category(task.category).label)}</strong><span style="flex:1">${esc(displayPrimary(task))}</span><small>${fmtDate(task.finishedAt)}</small><b>›</b></button>`).join(''):`<div class="empty-state">No hay tareas finalizadas.</div>`}</div>`;}
   function patientFields(p={}){
     const basic=[['name','Nombre',true],['surname','Apellidos',true],['nuhsa','NUHSA',true]];
@@ -287,8 +238,7 @@
         </div>
         <div id="nt-options-${f.name}" class="nt-combo-options hidden" role="listbox" aria-label="Opciones de ${esc(f.label)}">
           ${listOptions(f.list,v).map(s=>`<button type="button" role="option" data-combo-value="${esc(s)}" aria-selected="${s===v?'true':'false'}">${esc(s)}</button>`).join('')}
-          <p class="nt-combo-empty hidden">No está en el listado. Puedes escribirla directamente.</p>
-          <p class="nt-combo-hint">También puedes escribir una opción diferente.</p>
+          <p class="nt-combo-empty hidden">Sin coincidencias. Puedes escribir otra opción.</p>
         </div>
       </div>`;
     }
@@ -333,19 +283,16 @@
   }
   function showOther(form){const w=form.querySelector('[data-other-detail]');if(!w)return;const v=form.elements.primary?.value||'';w.classList.toggle('hidden',!['Otros','Otras'].includes(v));}
   function showDateAppointment(form){const el=form.querySelector('[data-dynamic="cita"]');if(!el)return;const situation=form.elements.situation?.value||'';const value=form.elements.dateAppointment?.value||'';el.classList.toggle('hidden',!(situation.startsWith('Citada,')||situation.startsWith('Realizada,')||situation.startsWith('Resultado')||situation.startsWith('Revisada')||Boolean(value)));}
-  function renderTaskForm(){const p=database.patients.find(p=>p.id===route.patientId);const task=route.taskId?database.tasks.find(t=>t.id===route.taskId):null;if(!p)return '<div>Paciente no encontrado</div>';const cat=category(route.category);const d=task?.data||{};const done=Boolean(task&&!task.active);return `${pageHead(cat.label)}<div class="patient-head-card">${sexIcon(p)}<div class="patient-head-content"><div class="patient-title-row"><button class="name-link" data-open-patient="${p.id}" type="button">${esc(patientName(p))} ↗</button>${ageBadge(p)}</div><div class="small">NUHSA: ${esc(p.nuhsa)}</div>${p.judgement?`<div class="patient-judgement">${esc(p.judgement)}</div>`:''}</div></div>${done?`<div class="warning-box">Tarea finalizada el ${fmtDate(task.finishedAt)}. Para modificarla, primero debes reactivarla.</div>`:''}<div class="section"><form id="data-form" novalidate><div class="field-grid">${FIELDS[cat.id].map(f=>fieldMarkup(f,d,done)).join('')}</div>${done?`<div class="button-row end-actions"><button class="btn btn-primary" type="button" data-reactivate="${task.id}">↻ Reactivar</button><button class="btn btn-danger" type="button" data-delete-task="${task.id}">🗑 Eliminar</button></div>`:`<div class="button-row end-actions"><button class="btn btn-primary" type="submit">💾 Guardar</button>${task?`<button class="btn btn-success" type="button" data-finish-task="${task.id}">✓ Finalizar</button><button class="btn btn-danger" type="button" data-delete-task="${task.id}">🗑 Eliminar</button>`:''}</div>`}</form></div>`;}
-  function renderConfig(){const items=[['sync','🔄','Sincronización','Estado de conexión y actualización de datos'],['options','📋','Personalizar desplegables','Modificar las opciones disponibles'],['backup','💾','Copia de seguridad','Exportar e importar datos ficticios'],['access','🔐','Acceso y seguridad','Información sobre la protección de datos'],['about','ℹ️','Acerca de NeumoTrack','Versión y detalles técnicos']];return `${pageHead('Configuración','Preferencias de NeumoTrack')}<div class="section">${items.map(([id,icon,title,desc])=>`<button type="button" class="config-entry" data-config="${id}"><span class="entry-ico">${icon}</span><span class="entry-label"><strong>${title}</strong><small>${desc}</small></span><span class="chev">›</span></button>`).join('')}</div>`;}
+  function renderTaskForm(){const p=database.patients.find(p=>p.id===route.patientId);const task=route.taskId?database.tasks.find(t=>t.id===route.taskId):null;if(!p)return '<div>Paciente no encontrado</div>';const cat=category(route.category);const d=task?.data||{};const done=Boolean(task&&!task.active);return `${pageHead(cat.label)}<div class="patient-head-card">${sexIcon(p)}<div class="patient-head-content"><div class="patient-title-row"><button class="name-link" data-open-patient="${p.id}" type="button">${esc(patientName(p))} ↗</button>${ageBadge(p)}</div><div class="small">NUHSA: ${esc(p.nuhsa)}</div>${p.judgement?`<div class="patient-judgement">${esc(p.judgement)}</div>`:''}</div></div>${done?`<div class="warning-box">Finalizada el ${fmtDate(task.finishedAt)}</div>`:''}<div class="section"><form id="data-form" novalidate><div class="field-grid">${FIELDS[cat.id].map(f=>fieldMarkup(f,d,done)).join('')}</div>${done?`<div class="button-row end-actions"><button class="btn btn-primary" type="button" data-reactivate="${task.id}">↻ Reactivar</button><button class="btn btn-danger" type="button" data-delete-task="${task.id}">🗑 Eliminar</button></div>`:`<div class="button-row end-actions"><button class="btn btn-primary" type="submit">💾 Guardar</button>${task?`<button class="btn btn-success" type="button" data-finish-task="${task.id}">✓ Finalizar</button><button class="btn btn-danger" type="button" data-delete-task="${task.id}">🗑 Eliminar</button>`:''}</div>`}</form></div>`;}
+  function renderConfig(){const items=[['excel','📊','Exportar a Excel'],['options','📋','Personalizar desplegables'],['backup','💾','Copia de seguridad'],['access','🔐','Acceso a NeumoTrack'],['about','ℹ️','Acerca de NeumoTrack']];return `${pageHead('Configuración')}<div class="section">${items.map(([id,icon,title])=>`<button type="button" class="config-entry" data-config="${id}"><span class="entry-ico">${icon}</span><span class="entry-label"><strong>${title}</strong></span><span class="chev">›</span></button>`).join('')}</div>`;}
   function renderConfigDetail(){let content='';switch(route.section){
-    case 'sync':content=`<div class="section"><h2>🔄 Sincronización</h2>
-    <div class="warning-box">Estado: <b>${cloudConfig?(cloudOnline?'Conectada a Google Sheets':'Conectada, pendiente de comprobar conexión'):'Modo local (sin sincronización)'}</b></div>
-    ${cloudConfig?`<p>La agenda se actualiza al entrar en cada pantalla y al guardar. Si no se puede confirmar un guardado, los datos del formulario permanecen para que puedas reintentarlo.</p><div class="button-row"><button class="btn btn-primary" data-action="sync-refresh">↻ Actualizar ahora</button><button class="btn btn-soft" data-action="sync-upload-local">Subir mis datos locales a una agenda compartida vacía</button><button class="btn btn-ghost" data-action="sync-disconnect">Desconectar</button></div><p class="muted">Conectado a: ${esc(cloudConfig.url)}</p>`:
-    `<p>Conecta el mismo Google Apps Script desde el iPhone y el ordenador. La agenda compartida comienza vacía; los datos de prueba guardados en este dispositivo no se suben automáticamente.</p><div class="field"><label for="sync-url">URL de Apps Script (termina en /exec)</label><input id="sync-url" type="url" placeholder="https://script.google.com/macros/s/…/exec" autocapitalize="none" spellcheck="false"></div><div class="field"><label for="sync-token">Clave de conexión</label><input id="sync-token" type="password" autocomplete="off" placeholder="Tu clave definida en Apps Script"></div><div class="button-row"><button class="btn btn-primary" data-action="sync-connect">Conectar agenda</button></div>`}
-    </div>`;break;
-    case 'options':content=`<div class="section"><h2>Personalizar desplegables</h2><p class="secondary-info">Puedes añadir o quitar opciones en este prototipo. Las opciones guardadas en tareas existentes no se eliminan de esas tareas.</p><div class="field" style="max-width:520px"><label for="option-key">Lista que deseas modificar</label><select id="option-key">${Object.entries(KEY_OPTIONS_LABELS).map(([k,v])=>`<option value="${k}" ${k===(route.optionKey||'testsPrimary')?'selected':''}>${esc(v)}</option>`).join('')}</select></div><div id="option-list">${configOptionList(route.optionKey||'testsPrimary')}</div><form id="option-add-form" class="config-add"><input class="search-input" id="option-new" placeholder="Añadir opción…" aria-label="Nueva opción" required><button class="btn btn-primary" type="submit">Añadir</button></form></div>`;break;
-    case 'backup':content=`<div class="section"><h2>💾 Copia de seguridad</h2><p>Exporta un archivo JSON con los pacientes ficticios y sus tareas, o recupera una copia anterior.</p><div class="warning-box">Es una copia local de demostración. No contiene mecanismos de seguridad para almacenar datos clínicos reales.</div><div class="button-row" style="justify-content:flex-start"><button class="btn btn-primary" type="button" data-action="export">↓ Exportar JSON</button><button class="btn btn-soft" type="button" data-action="import">↑ Importar JSON</button></div></div>`;break;
-    case 'access':content=`<div class="section"><h2>🔐 Acceso y seguridad</h2><p>La configuración de acceso de Google Apps Script se gestiona en la cuenta que aloja la hoja compartida.</p></div>`;break;
-    case 'about':content=`<div class="section"><h2>ℹ️ Acerca de NeumoTrack</h2><p><strong>NeumoTrack v9 · Sincronización opcional</strong></p><p>Tu agenda de Neumología.</p><p>Interfaz PWA para iPhone y ordenador, con seis categorías y navegación adaptativa. Datos de prueba: almacenamiento local o compartido cuando se configura Google Sheets.</p><p class="muted">La conexión con Google Sheets se configura desde Sincronización.</p></div>`;break;
-  }return `${pageHead(KEY_OPTIONS_LABELS[route.section]||({sync:'Sincronización',options:'Personalizar desplegables',backup:'Copia de seguridad',access:'Acceso y seguridad',about:'Acerca de NeumoTrack'})[route.section]||'Configuración')}${content}`;}
+    case 'excel':{const total=database.tasks.length;const active=database.tasks.filter(t=>t.active).length;
+      content=`<div class="section"><h2>📊 Exportar a Excel</h2><div class="warning-box" style="background:#edf7ff;border-color:#c9e4f9;color:#1d5c83"><strong>${total} tareas</strong> · ${active} activas · ${total-active} finalizadas</div><div class="button-row" style="justify-content:flex-start"><button class="btn btn-primary" type="button" data-action="export-xlsx">↓ Exportar Excel (.xlsx)</button></div></div>`;break;}
+    case 'options':content=`<div class="section"><h2>Personalizar desplegables</h2><div class="field" style="max-width:520px"><label for="option-key">Lista que deseas modificar</label><select id="option-key">${Object.entries(KEY_OPTIONS_LABELS).map(([k,v])=>`<option value="${k}" ${k===(route.optionKey||'testsPrimary')?'selected':''}>${esc(v)}</option>`).join('')}</select></div><div id="option-list">${configOptionList(route.optionKey||'testsPrimary')}</div><form id="option-add-form" class="config-add"><input class="search-input" id="option-new" placeholder="Añadir opción…" aria-label="Nueva opción" required><button class="btn btn-primary" type="submit">Añadir</button></form></div>`;break;
+    case 'backup':content=`<div class="section"><h2>💾 Copia de seguridad</h2><div class="button-row" style="justify-content:flex-start"><button class="btn btn-primary" type="button" data-action="export">↓ Exportar copia JSON</button><button class="btn btn-soft" type="button" data-action="import">↑ Importar copia JSON</button></div></div>`;break;
+    case 'access':content=`<div class="section"><h2>🔐 Acceso a NeumoTrack</h2><form id="credentials-form" class="access-settings-form" autocomplete="on"><div class="field"><label for="access-username">Usuario</label><input type="text" id="access-username" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required value="${esc(window.NeumoAuth?.getUsername()||'')}"></div><div class="field"><label for="access-current">Contraseña actual</label><input type="password" id="access-current" name="current-password" autocomplete="current-password" required></div><div class="field"><label for="access-new">Contraseña nueva</label><input type="password" id="access-new" name="new-password" autocomplete="new-password" minlength="8" required></div><div class="field"><label for="access-confirm">Repetir contraseña nueva</label><input type="password" id="access-confirm" name="confirm-password" autocomplete="new-password" minlength="8" required></div><button class="btn btn-primary" type="submit">Guardar credenciales</button></form><div class="access-divider"></div><button type="button" class="btn btn-soft" data-action="lock-now">🔒 Bloquear ahora</button></div>`;break;
+    case 'about':content=`<div class="section"><h2>ℹ️ Acerca de NeumoTrack</h2><p><strong>NeumoTrack V11.1</strong></p><p>DeRota8 - 2026</p></div>`;break;
+  }return `${pageHead(KEY_OPTIONS_LABELS[route.section]||({excel:'Exportar a Excel',options:'Personalizar desplegables',backup:'Copia de seguridad',access:'Acceso a NeumoTrack',about:'Acerca de NeumoTrack'})[route.section]||'Configuración')}${content}`;}
   function configOptionList(key){return `<div class="option-list">${(database.options[key]||[]).map((x,i)=>`<span class="opt-tag">${esc(x)}<button type="button" data-remove-option="${i}" title="Quitar opción" aria-label="Quitar ${esc(x)}">×</button></span>`).join('')}</div>`;}
   function render(){const isForm=['taskForm','patientEdit','newPatient'].includes(route.name);$screen.classList.toggle('form-screen',isForm);$nav.classList.toggle('hidden',isForm);$nav.innerHTML=navMarkup();let html='';switch(route.name){
     case 'home':html=renderHome();break;case 'category':html=renderCategory();break;case 'new':html=renderNew();break;
@@ -358,47 +305,11 @@
   function formValues(form){const result={};for(const el of form.querySelectorAll('[name]')){if(el.disabled)continue;if((el.type==='radio'||el.type==='checkbox')&&!el.checked)continue;result[el.name]=el.type==='date'?el.value:clean(el.value);}if(form.querySelector('[name=sex]')&&!('sex' in result))result.sex='';return result;}
   function isValidTask(vals,cat){const principal=FIELDS[cat].find(f=>f.required);if(!clean(vals[principal.name])){toast(`Completa el campo obligatorio: ${principal.label}.`);$screen.querySelector(`[name="${principal.name}"]`)?.focus();return false;}if(['Otras','Otros'].includes(vals.primary)&&!clean(vals.otherDetail)){toast('Especifica la opción elegida en Otros.');$screen.querySelector('[name="otherDetail"]')?.focus();return false;}return true;}
   function validatePatient(vals,oldId){if(!vals.name||!vals.surname||!vals.nuhsa){toast('Nombre, apellidos y NUHSA son obligatorios.');return false;}if(vals.age!==''&&(!/^\d{1,3}$/.test(vals.age)||Number(vals.age)>120)){toast('Introduce una edad válida entre 0 y 120 años.');$screen.querySelector('[name=age]')?.focus();return false;}const exists=database.patients.find(p=>norm(p.nuhsa)===norm(vals.nuhsa) && p.id!==oldId);if(exists){promptModal('Paciente ya registrado',`Ya existe una ficha con ese NUHSA: ${patientName(exists)}.`,[{label:'Cerrar',kind:'ghost',value:false},{label:'Abrir ficha existente',kind:'primary',value:true}]).then(yes=>{if(yes)go({name:'patientDetail',patientId:exists.id},{force:true});});return false;}return true;}
-  async function persistDb(next){
-    if(!cloudConfig){const ok=writeStored(next);if(ok)database=next;else toast('No se pudo guardar en este navegador.');return ok;}
-    if(cloudBusy){toast('Espera a que termine la sincronización.');return false;}
-    if(pendingCloudWrite){
-      try{
-        const result=await getCloudAt(cloudConfig);
-        const previouslySaved=(result.operations||[]).includes(pendingCloudWrite.operationId)||result.lastOperationId===pendingCloudWrite.operationId;
-        const conflict=result.revision!==pendingCloudWrite.baseRevision;
-        if(previouslySaved||conflict){pendingCloudWrite=null;applyCloudSnapshot(result);toast(previouslySaved?'Se ha confirmado el guardado anterior. Vuelve a abrir la ficha para comprobarlo.':'La agenda cambió en otro dispositivo. Revisa tus datos.');return false;}
-        pendingCloudWrite=null;cloudOnline=true; // Operación anterior no confirmada: un nuevo guardado mantiene el bloqueo por revisión en servidor.
-      }catch(e){toast('No se ha podido comprobar el guardado pendiente.');return false;}
-    }
-    cloudBusy=true;
-    try{
-      if(!cloudOnline){toast('Sin conexión con la agenda compartida. No se han perdido tus cambios.');return false;}
-      const current=await getCloudAt(cloudConfig);
-      if(current.revision!==cloudRevision){applyCloudSnapshot(current);toast('La agenda ha cambiado en otro dispositivo. Tus cambios siguen en el formulario; vuelve a revisarlos.');return false;}
-      const operationId=uid();const baseRevision=cloudRevision;
-      pendingCloudWrite={operationId,baseRevision};
-      try{
-        await fetch(cloudConfig.url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify({action:'save',token:cloudConfig.token,operationId,baseRevision,data:next}),redirect:'follow'});
-      }catch(e){/* El POST puede haberse procesado aunque el navegador informe de un fallo. Se verifica por lectura. */}
-      let last=null;
-      for(let attempt=0;attempt<6;attempt++){
-        try{last=await getCloudAt(cloudConfig);
-          if((last.operations||[]).includes(operationId)||last.lastOperationId===operationId){
-            applyCloudSnapshot(last);pendingCloudWrite=null;return true;
-          }
-          if(last.revision!==baseRevision){applyCloudSnapshot(last);pendingCloudWrite=null;toast('Otro dispositivo modificó la agenda. No se han sobrescrito tus cambios.');return false;}
-        }catch(e){}
-        await new Promise(resolve=>setTimeout(resolve,1200));
-      }
-      // Mantener ID para evitar repetir una operación cuyo resultado se desconoce.
-      cloudOnline=false;toast('No se pudo confirmar el guardado. Tus cambios permanecen en pantalla.');return false;
-    }catch(err){cloudOnline=false;toast('No se pudo guardar: '+err.message);return false;}
-    finally{cloudBusy=false;}
-  }
+  function persistDb(next){const ok=writeStored(next);if(ok)database=next;else toast('No se pudo guardar en este navegador.');return ok;}
   function latestDb(){return readStored()||database;}
   async function savePatient(form){const vals=formValues(form);if(!validatePatient(vals,route.name==='patientEdit'?route.patientId:null))return;const next=latestDb();const duplicate=next.patients.find(p=>norm(p.nuhsa)===norm(vals.nuhsa)&&p.id!==(route.name==='patientEdit'?route.patientId:null));if(duplicate){toast('Este NUHSA ya está registrado.');return;}
-    if(route.name==='newPatient'){const patient={...vals,id:uid(),rev:1};next.patients.push(patient);if(!await persistDb(next))return;editingForm=false;await go({name:'taskForm',category:route.category,patientId:patient.id},{force:true});toast('Paciente creado. Completa su primera tarea.');}
-    else{const existing=next.patients.find(p=>p.id===route.patientId);if(!existing)return toast('La ficha ya no existe.');if(existing.rev!==route.rev && typeof route.rev==='number')return toast('Esta ficha fue modificada en otra pestaña. Vuelve a cargarla.');Object.assign(existing,vals,{rev:(existing.rev||1)+1});if(!await persistDb(next))return;editingForm=false;await go({name:'patientDetail',patientId:existing.id},{force:true});toast('Datos del paciente guardados.');}
+    if(route.name==='newPatient'){const patient={...vals,id:uid(),rev:1};next.patients.push(patient);if(!persistDb(next))return;editingForm=false;await go({name:'taskForm',category:route.category,patientId:patient.id},{force:true});toast('Paciente creado. Completa su primera tarea.');}
+    else{const existing=next.patients.find(p=>p.id===route.patientId);if(!existing)return toast('La ficha ya no existe.');if(existing.rev!==route.rev && typeof route.rev==='number')return toast('Esta ficha fue modificada en otra pestaña. Vuelve a cargarla.');Object.assign(existing,vals,{rev:(existing.rev||1)+1});if(!persistDb(next))return;editingForm=false;await go({name:'patientDetail',patientId:existing.id},{force:true});toast('Datos del paciente guardados.');}
   }
   function taskConflict(next){const task=next.tasks.find(t=>t.id===route.taskId);if(route.taskId&&(!task||task.rev!==route.taskRev))return true;return false;}
   async function conflictMessage(){await promptModal('Cambios más recientes','Este formulario ha cambiado desde que lo abriste, posiblemente en otra pestaña. No se han sobrescrito los cambios. Puedes revisarlos antes de guardar.',[{label:'Seguir editando',kind:'ghost',value:false},{label:'Actualizar ficha',kind:'primary',value:true}]).then(refresh=>{if(refresh){database=latestDb();go({...route,taskRev:database.tasks.find(t=>t.id===route.taskId)?.rev},{force:true,push:false});}});}
@@ -407,14 +318,31 @@
     const existing=current.tasks.find(t=>t.id===route.taskId);
     if(existing){existing.data={...existing.data,...vals};existing.rev=(existing.rev||1)+1;if(finalize){existing.active=false;existing.finishedAt=today();}}
     else {const other=current.tasks.find(t=>t.patientId===route.patientId&&t.category===route.category);if(other){toast('El paciente ya tiene un registro en este apartado.');return;}current.tasks.push({id:uid(),patientId:route.patientId,category:route.category,data:vals,active:!finalize,finishedAt:finalize?today():null,rev:1});}
-    if(!await persistDb(current))return;editingForm=false;await go({name:'category',category:route.category,tab:finalize?'finished':'active'},{force:true});toast(finalize?'Tarea finalizada correctamente.':'Guardado correctamente.');}
+    if(!persistDb(current))return;editingForm=false;await go({name:'category',category:route.category,tab:finalize?'finished':'active'},{force:true});toast(finalize?'Tarea finalizada correctamente.':'Guardado correctamente.');}
   async function finishTask(){if(!isValidTask(formValues($screen.querySelector('#data-form')),route.category))return;const yes=await promptModal('Finalizar esta tarea','Se guardarán los cambios realizados y la tarea pasará a Finalizados. ¿Quieres continuar?', [{label:'Cancelar',kind:'ghost',value:false},{label:'Finalizar',kind:'primary',value:true}]);if(yes)await commitTask(true);}
-  async function deleteTask(taskId){const t=database.tasks.find(t=>t.id===taskId);if(!t)return;const yes=await promptModal('Eliminar tarea','Se eliminará este registro de '+category(t.category).label+'. La ficha general del paciente y los demás apartados se conservarán. ¿Confirmas la eliminación?', [{label:'Cancelar',kind:'ghost',value:false},{label:'Eliminar',kind:'danger',value:true}]);if(!yes)return;const next=latestDb();const target=next.tasks.find(x=>x.id===taskId);if(!target){toast('La tarea ya se ha eliminado.');return;}if(target.rev!==route.taskRev){await conflictMessage();return;}next.tasks=next.tasks.filter(x=>x.id!==taskId);if(!await persistDb(next))return;editingForm=false;await go({name:'category',category:t.category,tab:t.active?'active':'finished'},{force:true});toast('Tarea eliminada.');}
-  async function reactivateTask(id){const t=database.tasks.find(t=>t.id===id);if(!t)return;const yes=await promptModal('Reactivar tarea','Se recuperará este registro. La situación/estado y la fecha de próxima revisión quedarán vacíos; las observaciones y los demás datos se conservarán.',[{label:'Cancelar',kind:'ghost',value:false},{label:'Reactivar',kind:'primary',value:true}]);if(!yes)return;const next=latestDb();const task=next.tasks.find(x=>x.id===id);if(!task)return toast('La tarea ya no existe.');if(next.tasks.some(x=>x.id!==id&&x.patientId===task.patientId&&x.category===task.category&&x.active)){toast('Ya existe otra tarea activa en ese apartado.');return;}task.active=true;task.finishedAt=null;task.data.dateReview='';if(task.category==='transplant')task.data.primary='';else task.data.situation='';task.rev=(task.rev||1)+1;if(!await persistDb(next))return;editingForm=false;await go({name:'category',category:task.category,tab:'active'},{force:true});toast('Tarea reactivada. Selecciona la nueva situación.');}
-  async function deletePatient(id){const p=database.patients.find(p=>p.id===id);if(!p)return;const count=database.tasks.filter(t=>t.patientId===id).length;const yes=await promptModal('Eliminar paciente por completo',`Se borrará definitivamente la ficha de ${patientName(p)} y sus ${count} tarea(s), tanto activas como finalizadas, en TODOS los apartados. Esta acción no se puede deshacer desde NeumoTrack.`,[{label:'Cancelar',kind:'ghost',value:false},{label:'Eliminar paciente',kind:'danger',value:true}],{phrase:true});if(!yes)return;const next=latestDb();next.patients=next.patients.filter(p=>p.id!==id);next.tasks=next.tasks.filter(t=>t.patientId!==id);if(!await persistDb(next))return;await go({name:'search'},{force:true});toast('Paciente y tareas eliminados.');}
+  async function deleteTask(taskId){const t=database.tasks.find(t=>t.id===taskId);if(!t)return;const yes=await promptModal('Eliminar tarea','Se eliminará este registro de '+category(t.category).label+'. La ficha general del paciente y los demás apartados se conservarán. ¿Confirmas la eliminación?', [{label:'Cancelar',kind:'ghost',value:false},{label:'Eliminar',kind:'danger',value:true}]);if(!yes)return;const next=latestDb();const target=next.tasks.find(x=>x.id===taskId);if(!target){toast('La tarea ya se ha eliminado.');return;}if(target.rev!==route.taskRev){await conflictMessage();return;}next.tasks=next.tasks.filter(x=>x.id!==taskId);if(!persistDb(next))return;editingForm=false;await go({name:'category',category:t.category,tab:t.active?'active':'finished'},{force:true});toast('Tarea eliminada.');}
+  async function reactivateTask(id){const t=database.tasks.find(t=>t.id===id);if(!t)return;const yes=await promptModal('Reactivar tarea','Se recuperará este registro. La situación/estado y la fecha de próxima revisión quedarán vacíos; las observaciones y los demás datos se conservarán.',[{label:'Cancelar',kind:'ghost',value:false},{label:'Reactivar',kind:'primary',value:true}]);if(!yes)return;const next=latestDb();const task=next.tasks.find(x=>x.id===id);if(!task)return toast('La tarea ya no existe.');if(next.tasks.some(x=>x.id!==id&&x.patientId===task.patientId&&x.category===task.category&&x.active)){toast('Ya existe otra tarea activa en ese apartado.');return;}task.active=true;task.finishedAt=null;task.data.dateReview='';if(task.category==='transplant')task.data.primary='';else task.data.situation='';task.rev=(task.rev||1)+1;if(!persistDb(next))return;editingForm=false;await go({name:'category',category:task.category,tab:'active'},{force:true});toast('Tarea reactivada. Selecciona la nueva situación.');}
+  async function deletePatient(id){const p=database.patients.find(p=>p.id===id);if(!p)return;const count=database.tasks.filter(t=>t.patientId===id).length;const yes=await promptModal('Eliminar paciente por completo',`Se borrará definitivamente la ficha de ${patientName(p)} y sus ${count} tarea(s), tanto activas como finalizadas, en TODOS los apartados. Esta acción no se puede deshacer desde NeumoTrack.`,[{label:'Cancelar',kind:'ghost',value:false},{label:'Eliminar paciente',kind:'danger',value:true}],{phrase:true});if(!yes)return;const next=latestDb();next.patients=next.patients.filter(p=>p.id!==id);next.tasks=next.tasks.filter(t=>t.patientId!==id);if(!persistDb(next))return;await go({name:'search'},{force:true});toast('Paciente y tareas eliminados.');}
   async function selectPatientForCategory(id,cat){const t=database.tasks.find(t=>t.patientId===id&&t.category===cat);if(!t)return go({name:'taskForm',patientId:id,category:cat});if(t.active)return go({name:'taskForm',patientId:id,category:cat,taskId:t.id,taskRev:t.rev});const yes=await promptModal('Tarea ya finalizada',`Este paciente tiene una tarea finalizada en ${category(cat).label}. ¿Quieres abrirla para revisarla y, si lo deseas, reactivarla?`,[{label:'Cancelar',kind:'ghost',value:false},{label:'Abrir ficha existente',kind:'primary',value:true}]);if(yes)go({name:'taskForm',patientId:id,category:cat,taskId:t.id,taskRev:t.rev});}
-  function downloadJson(){const blob=new Blob([JSON.stringify({app:'NeumoTrack',demo:true,exportedAt:new Date().toISOString(),data:database},null,2)],{type:'application/json'});const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=`NeumoTrack_DEMO_${today()}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);toast('Copia de prueba exportada.');}
-  async function readImport(file){if(cloudConfig){toast('Desconecta la agenda compartida antes de importar un archivo local.');return;}try{const raw=JSON.parse(await file.text());const imp=raw.data;if(raw.app!=='NeumoTrack'||raw.demo!==true||!imp||!Array.isArray(imp.patients)||!Array.isArray(imp.tasks))throw Error('Archivo no válido para este prototipo.');if(imp.patients.length>50000||imp.tasks.length>100000)throw Error('Archivo demasiado grande.');if(new Set(imp.patients.map(p=>norm(p.nuhsa))).size!==imp.patients.length)throw Error('El archivo contiene NUHSA duplicados.');if(imp.tasks.some(t=>!imp.patients.some(p=>p.id===t.patientId)||!CATEGORIES.some(c=>c.id===t.category)))throw Error('El archivo contiene tareas inválidas.');const yes=await promptModal('Importar copia de seguridad','Se reemplazarán todos los datos ficticios guardados en este navegador con el contenido del archivo. ¿Quieres continuar?',[{label:'Cancelar',kind:'ghost',value:false},{label:'Importar copia',kind:'primary',value:true}]);if(!yes)return;imp.options=imp.options||JSON.parse(JSON.stringify(DEFAULT_OPTIONS));if(!await persistDb(imp))return;history=[];go({name:'home'},{force:true,push:false});toast('Copia de demostración importada.');}catch(e){toast(`Error al importar: ${e.message}`);}}
+  async function exportExcel(){
+    try{
+      const current=latestDb();
+      if(!current||!Array.isArray(current.patients)||!Array.isArray(current.tasks))throw Error('No hay datos válidos para exportar.');
+      if(!window.NeumoTrackXlsx)throw Error('El módulo Excel no se ha cargado. Abre de nuevo NeumoTrack.');
+      const {blob,counts}=window.NeumoTrackXlsx.createWorkbook(current,CATEGORIES,FIELDS);
+      const date=today();const fileName='NeumoTrack_'+date+'.xlsx';
+      const file=new File([blob],fileName,{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+      if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+        try{await navigator.share({files:[file],title:'Exportación NeumoTrack'});toast('Excel preparado para compartir o guardar.');return;}
+        catch(e){if(e&&e.name==='AbortError')return;}
+      }
+      const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=fileName;
+      document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),30000);
+      toast('Excel generado: '+counts.reduce((a,b)=>a+b,0)+' tareas en seis pestañas.');
+    }catch(e){toast('No se pudo exportar Excel: '+e.message);}
+  }
+  function downloadJson(){const blob=new Blob([JSON.stringify({app:'NeumoTrack',exportedAt:new Date().toISOString(),data:database},null,2)],{type:'application/json'});const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=`NeumoTrack_${today()}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);toast('Copia de seguridad exportada.');}
+  async function readImport(file){try{const raw=JSON.parse(await file.text());const imp=raw.data;if(raw.app!=='NeumoTrack'||!imp||!Array.isArray(imp.patients)||!Array.isArray(imp.tasks))throw Error('Archivo de NeumoTrack no válido.');if(imp.patients.length>50000||imp.tasks.length>100000)throw Error('Archivo demasiado grande.');if(new Set(imp.patients.map(p=>norm(p.nuhsa))).size!==imp.patients.length)throw Error('El archivo contiene NUHSA duplicados.');if(imp.tasks.some(t=>!imp.patients.some(p=>p.id===t.patientId)||!CATEGORIES.some(c=>c.id===t.category)))throw Error('El archivo contiene tareas inválidas.');const yes=await promptModal('Importar copia de seguridad','Se reemplazarán todos los datos guardados en este navegador con el contenido del archivo. ¿Quieres continuar?',[{label:'Cancelar',kind:'ghost',value:false},{label:'Importar copia',kind:'primary',value:true}]);if(!yes)return;imp.options=imp.options||JSON.parse(JSON.stringify(DEFAULT_OPTIONS));if(!persistDb(imp))return;history=[];go({name:'home'},{force:true,push:false});toast('Copia de seguridad importada.');}catch(e){toast(`Error al importar: ${e.message}`);}}
   function updateLookup(input){route.query=input.value;const target=$screen.querySelector('#lookup-results');if(target)target.innerHTML=lookupRows(route.query);}
   function updateCatFilter(input){route.filter=input.value;const target=$screen.querySelector('#cat-rows');if(target)target.innerHTML=catRows(sortedTasks(route.category,route.tab||'active'),route.tab||'active',route.filter);}
   $nav.addEventListener('click',e=>{const btn=e.target.closest('[data-go]');if(btn)go({name:btn.dataset.go});});
@@ -443,13 +371,11 @@
     if(el.dataset.reactivate){await reactivateTask(el.dataset.reactivate);return;}
     if(el.dataset.deletePatient){await deletePatient(el.dataset.deletePatient);return;}
     if(el.dataset.config){go({name:'configDetail',section:el.dataset.config});return;}
-    if(el.dataset.action==='sync-connect'){await connectCloud();return;}
-    if(el.dataset.action==='sync-disconnect'){await disconnectCloud();return;}
-    if(el.dataset.action==='sync-refresh'){if(await refreshCloud()){render();toast('Agenda compartida actualizada.');}return;}
-    if(el.dataset.action==='sync-upload-local'){await uploadLocalCloud();return;}
+    if(el.dataset.action==='lock-now'){if(hasDirty()){toast('Guarda o descarta tus cambios antes de bloquear.');return;}window.NeumoAuth?.lock();return;}
+    if(el.dataset.action==='export-xlsx'){await exportExcel();return;}
     if(el.dataset.action==='export'){downloadJson();return;}
     if(el.dataset.action==='import'){document.getElementById('import-file').click();return;}
-    if(el.dataset.removeOption!==undefined){const key=route.optionKey||'testsPrimary';const index=Number(el.dataset.removeOption);if(!Number.isInteger(index))return;const yes=await promptModal('Quitar opción',`La opción «${database.options[key][index]}» dejará de aparecer en este desplegable. Los datos guardados de las tareas existentes no cambiarán.`,[{label:'Cancelar',kind:'ghost',value:false},{label:'Quitar',kind:'danger',value:true}]);if(yes){const next=latestDb();next.options[key].splice(index,1);if(await persistDb(next))render();}return;}
+    if(el.dataset.removeOption!==undefined){const key=route.optionKey||'testsPrimary';const index=Number(el.dataset.removeOption);if(!Number.isInteger(index))return;const yes=await promptModal('Quitar opción',`La opción «${database.options[key][index]}» dejará de aparecer en este desplegable. Los datos guardados de las tareas existentes no cambiarán.`,[{label:'Cancelar',kind:'ghost',value:false},{label:'Quitar',kind:'danger',value:true}]);if(yes){const next=latestDb();next.options[key].splice(index,1);if(persistDb(next))render();}return;}
   });
   $screen.addEventListener('input',e=>{
     if(e.target.id==='global-lookup'||e.target.id==='lookup-search'){updateLookup(e.target);return;}
@@ -489,10 +415,23 @@
     if(!e.target.closest('[data-combo]'))closeCombos();
   });
   $screen.addEventListener('submit',async e=>{
+    if(e.target.id==='credentials-form'){
+      e.preventDefault();
+      const f=e.target;
+      const b=f.querySelector('button[type=submit]');
+      if(b.disabled)return;
+      b.disabled=true;
+      try{
+        const result=await window.NeumoAuth.changeCredentials(f.elements.username.value, f.elements['current-password'].value, f.elements['new-password'].value, f.elements['confirm-password'].value);
+        if(result.ok){toast('Credenciales actualizadas.');f.elements['current-password'].value='';f.elements['new-password'].value='';f.elements['confirm-password'].value='';}
+        else toast(result.error);
+      }finally{b.disabled=false;}
+      return;
+    }
     if(e.target.id==='data-form'){e.preventDefault();if(route.name==='newPatient'||route.name==='patientEdit')await savePatient(e.target);else if(route.name==='taskForm')await commitTask(false);return;}
-    if(e.target.id==='option-add-form'){e.preventDefault();const key=route.optionKey||'testsPrimary';const v=clean($screen.querySelector('#option-new').value);if(!v)return;if(database.options[key].some(s=>norm(s)===norm(v))){toast('Esa opción ya existe.');return;}const next=latestDb();next.options[key].push(v);if(await persistDb(next)){render();toast('Opción añadida.');}return;}
+    if(e.target.id==='option-add-form'){e.preventDefault();const key=route.optionKey||'testsPrimary';const v=clean($screen.querySelector('#option-new').value);if(!v)return;if(database.options[key].some(s=>norm(s)===norm(v))){toast('Esa opción ya existe.');return;}const next=latestDb();next.options[key].push(v);if(persistDb(next)){render();toast('Opción añadida.');}return;}
   });
   document.getElementById('import-file').addEventListener('change',async e=>{const file=e.target.files?.[0];if(file)await readImport(file);e.target.value='';});
   window.addEventListener('storage',event=>{if(event.key!==STORAGE_KEY)return;if(!hasDirty()){database=readStored()||database;render();}else toast('Hay cambios en otra pestaña; revisaremos al guardar.');});
-  initialize();
+  window.NeumoAuth.gate(initialize);
 })();

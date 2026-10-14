@@ -1,4 +1,7 @@
-NeumoTrack v9 - PWA con sincronización opcional a Google Sheets mediante Apps Script.
-Mantiene diseño y formularios de v8.3.
-Abre Configuración > Sincronización para conectar.
-Consulta NeumoTrack_V9_AppsScript/INSTRUCCIONES.txt antes de configurar.
+NeumoTrack V11.1 — Edición concisa
+
+Actualización de textos y pantallas, sin cambios en el almacenamiento, formularios ni exportación.
+
+Sube a la raíz del repositorio de GitHub los archivos incluidos en el ZIP de actualización, sustituyendo los anteriores. Espera a que GitHub Pages se publique (Actions, verde). Abre de nuevo la app instalada en el iPhone. No es necesario desinstalarla.
+
+Archivos que cambian: index.html, app.js, auth.js, auth.css, LEEME.txt.
